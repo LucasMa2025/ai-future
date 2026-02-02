@@ -1,208 +1,170 @@
 # Bridge Module
 """
-Learning Unit 桥接模块
+Learning Unit 桥接模块 v4.0
 
-将审计通过的 Learning Unit 写入生产系统，实现知识内化。
+⚠️ 重要说明 (v4.0)
+==================
+1. 本模块已废弃，保留仅为兼容性
+2. AIFuture (治理系统) 与 AGA 是独立部署的服务
+3. 知识转移通过 HTTP API 完成，详见:
+   - 治理系统: AIFuture/backend/app/services/knowledge_transfer_service.py
+   - Portal API: AGA/docs/Portal_API_Reference.md
 
-推荐方案（默认）：
-┌─────────────────────────────────────────────────────────────┐
-│  AGA Bridge - 热插拔式知识系统（远程 API 版本）             │
-│  ├─ 零训练注入：知识直接写入 buffer                         │
-│  ├─ 即时生效：毫秒级内化                                    │
-│  ├─ 即时隔离：问题知识可立即移除                            │
-│  ├─ 完全可追溯：每个贡献可追溯到具体 LU                     │
-│  ├─ 无灾难性遗忘：不修改原始模型参数                        │
-│  └─ 远程 API：支持分布式部署，GPU/CPU 分离                  │
-└─────────────────────────────────────────────────────────────┘
+架构变更:
+=========
+旧架构 (v3.x):
+    AIFuture ─── (import) ───> bridge/ ─── (local call) ───> AGA 内部模块
+    
+新架构 (v4.0):
+    ┌────────────────────────────┐         ┌────────────────────────────┐
+    │  AIFuture (治理系统)        │         │  AGA Portal (知识管理)     │
+    │  - 可能部署在服务器 A       │  HTTP   │  - 可能部署在服务器 B       │
+    │  - knowledge_transfer_     │◄───────►│  - 提供 REST API           │
+    │    service.py 负责转移      │   API   │  - 无状态，易于扩展         │
+    └────────────────────────────┘         └────────────────────────────┘
 
-架构说明：
-┌─────────────────────────────────────────────────────────────┐
-│  Backend Server (CPU)                                       │
-│  ┌───────────────────────────────────────────────────────┐ │
-│  │ AGABridge                                              │ │
-│  │  - write_learning_unit()                               │ │
-│  │  - confirm/deprecate/quarantine_learning_unit()        │ │
-│  │  - 通过 HTTP 调用远程 AGA API                         │ │
-│  └─────────────────────────┬─────────────────────────────┘ │
-└────────────────────────────┼────────────────────────────────┘
-                             │ HTTP REST API
-                             v
-┌─────────────────────────────────────────────────────────────┐
-│  AGA Server (GPU) - python -m aga.api --port 8081           │
-│  ┌───────────────────────────────────────────────────────┐ │
-│  │ FastAPI (aga/api.py)                                   │ │
-│  │  - POST /inject, /inject/batch                         │ │
-│  │  - POST /lifecycle/update, /quarantine/*               │ │
-│  │  - GET /slot/*, /statistics                            │ │
-│  └─────────────────────────┬─────────────────────────────┘ │
-│                            v                                │
-│  ┌───────────────────────────────────────────────────────┐ │
-│  │ AGA Module (aga/core.py v2.1)                          │ │
-│  │  - AuxiliaryGovernedAttention                          │ │
-│  │  - 挂载到 Transformer 模型                             │ │
-│  └───────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────┘
+废弃模块说明:
+============
+以下模块已废弃，仅保留文件供参考，不再维护:
 
-传统方案（保留）：
-┌─────────────────────────────────────────────────────────────┐
-│  Layer 3: DeepInternalizationService (深度内化服务)         │
-│  Layer 2: Knowledge Adapter (深层内化)                      │
-│  Layer 1: Decision Head (表层内化)                          │
-│  Layer 0: Permission + Bridge (权限和写入控制)              │
-└─────────────────────────────────────────────────────────────┘
+- bridge_factory.py      : 工厂模式已不适用于分布式架构
+- aga_bridge.py          : AGA Bridge 概念已废弃，改用 HTTP API
+- aga_core.py            : 本地 AGA 核心集成已移除
+- portal_client.py       : 已迁移到 aga.client，本地副本废弃
+- production_bridge.py   : 传统 Bridge 模式不支持分布式
+- knowledge_adapter.py   : 内化方案仅 AGA 有效，其他方案已废弃
+- deep_internalization_service.py : 深度内化服务已废弃
+- enhanced_internalization.py     : 增强内化已废弃
+- internalization.py     : 内化引擎已废弃
 
-使用方式：
-```python
-from bridge import create_bridge
+保留模块:
+=========
+- permission.py          : 权限验证（仍可用于本地权限检查）
 
-# 默认使用 AGA（推荐）
-bridge = create_bridge(
-    aga_api_url="http://gpu-server:8081",
-    encoder=KnowledgeEncoder(model, tokenizer),  # 可选
-)
+推荐使用:
+=========
+治理系统应使用以下方式与 AGA 通信:
 
-# 或指定传统方案
-bridge = create_bridge(model, tokenizer, bridge_type="traditional")
-```
+1. 配置 AGA Portal 地址和认证信息:
+   - 修改 AIFuture/backend/app/config.py
+   - 设置 AGA_PORTAL_URL, AGA_PORTAL_API_KEY 等
+
+2. 使用 KnowledgeTransferService:
+   ```python
+   from app.services.knowledge_transfer_service import KnowledgeTransferService
+   
+   service = KnowledgeTransferService(db_session)
+   result = service.transfer_to_aga(lu_id)
+   ```
+
+3. 或直接使用 httpx 调用 Portal API:
+   ```python
+   import httpx
+   
+   client = httpx.Client(base_url="http://aga-portal:8081")
+   response = client.post("/knowledge/inject", json={...})
+   ```
+
+4. AGA 独立安装到生产服务器时，可复制 aga/client/portal_client.py
+   作为独立的客户端库使用。
 """
 
-# ==================== AGA Bridge（推荐，远程 API 模式） ====================
-from .aga_bridge import (
-    AGABridge,
-    AGABridgeConfig,
-    AGAWriteRecord,
-    AGAAPIClient,
-    KnowledgeEncoder,
-    BridgeWriteResult,
-    LifecycleState,
-    LearningUnitProtocol,
-    AuditApprovalProtocol,
-    ConstraintProtocol,
+import warnings
+
+# ==================== 发出废弃警告 ====================
+warnings.warn(
+    "AIFuture.bridge 模块已废弃 (v4.0)。"
+    "知识转移功能已迁移到 app.services.knowledge_transfer_service。"
+    "请参阅模块文档了解新架构。",
+    DeprecationWarning,
+    stacklevel=2,
 )
 
-# AGA 核心模块（用于本地 AGA 服务启动）
-try:
-    import sys
-    import os
-    parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    if parent_dir not in sys.path:
-        sys.path.insert(0, parent_dir)
-    
-    from aga.core import (
-        AuxiliaryGovernedAttention,
-        AGAAugmentedTransformerLayer,
-        AGAManager,
-        KnowledgeSlotInfo,
-        AGADiagnostics,
-        AGAConfig,
-    )
-    from aga.api import create_aga_api, AGAService, AGAClient
-    AGA_VERSION = "v2.1"
-    HAS_AGA_CORE = True
-except ImportError:
-    AuxiliaryGovernedAttention = None
-    AGAAugmentedTransformerLayer = None
-    AGAManager = None
-    KnowledgeSlotInfo = None
-    AGADiagnostics = None
-    AGAConfig = None
-    create_aga_api = None
-    AGAService = None
-    AGAClient = None
-    AGA_VERSION = "remote-only"
-    HAS_AGA_CORE = False
 
-from .bridge_factory import (
-    BridgeFactory,
-    BridgeType,
-    BridgeConfig,
-    create_bridge,
-)
-
-# ==================== 传统方案（保留） ====================
+# ==================== 保留模块 ====================
+# 权限验证器仍可用
 from .permission import PermissionValidator
-from .internalization import InternalizationEngine
-from .production_bridge import ProductionBridge
 
-# 增强版 - Decision Head 改进
-from .enhanced_internalization import (
-    EnhancedInternalizationEngine,
-    EnhancedDecisionHead,
-    InternalizationConfig,
-    EWCRegularizer,
-)
+# ==================== 废弃模块的兼容性导入 ====================
+# 这些导入会发出警告，仅为向后兼容保留
 
-# 深层内化 - Knowledge Adapter
-from .knowledge_adapter import (
-    KnowledgeAdapter,
-    KnowledgeAdapterLayer,
-    KnowledgeAdapterManager,
-    KnowledgeSlot,
-    create_knowledge_encoder,
-)
+def _deprecated_import(name: str):
+    """辅助函数：导入废弃模块时发出警告"""
+    warnings.warn(
+        f"'{name}' 已废弃。请使用 app.services.knowledge_transfer_service 或直接调用 AGA Portal API。",
+        DeprecationWarning,
+        stacklevel=3,
+    )
 
-# 深度内化服务 - 完整方案
-from .deep_internalization_service import (
-    DeepInternalizationService,
-    InternalizationResult,
-)
+# AGA Bridge 相关（废弃，仅保留类型定义）
+try:
+    from .aga_bridge import (
+        AGABridge,
+        AGABridgeConfig,
+        AGAWriteRecord,
+        KnowledgeEncoder,
+        BridgeWriteResult,
+        LifecycleState,
+        LearningUnitProtocol,
+        AuditApprovalProtocol,
+        ConstraintProtocol,
+    )
+except ImportError:
+    AGABridge = None
+    AGABridgeConfig = None
+    AGAWriteRecord = None
+    KnowledgeEncoder = None
+    BridgeWriteResult = None
+    LifecycleState = None
+    LearningUnitProtocol = None
+    AuditApprovalProtocol = None
+    ConstraintProtocol = None
+
+# 传统桥接组件（废弃）
+try:
+    from .production_bridge import ProductionBridge
+    from .internalization import InternalizationEngine
+except ImportError:
+    ProductionBridge = None
+    InternalizationEngine = None
+
+# 工厂（废弃）
+try:
+    from .bridge_factory import BridgeFactory, BridgeType, BridgeConfig, create_bridge
+except ImportError:
+    BridgeFactory = None
+    BridgeType = None
+    BridgeConfig = None
+    create_bridge = None
+
 
 __all__ = [
-    # ========== AGA Bridge（推荐，远程 API 模式） ==========
-    # Bridge（主要接口）
+    # 保留的功能
+    'PermissionValidator',
+    
+    # 废弃但仍导出的类型（仅用于兼容性）
     'AGABridge',
     'AGABridgeConfig',
     'AGAWriteRecord',
-    'AGAAPIClient',  # HTTP 客户端
     'KnowledgeEncoder',
     'BridgeWriteResult',
     'LifecycleState',
-    
-    # 协议接口（用于类型检查）
     'LearningUnitProtocol',
     'AuditApprovalProtocol',
     'ConstraintProtocol',
     
-    # AGA 核心（用于本地 AGA 服务启动）
-    'AuxiliaryGovernedAttention',
-    'AGAAugmentedTransformerLayer',
-    'AGAManager',
-    'KnowledgeSlotInfo',
-    'AGADiagnostics',
-    'AGAConfig',
-    'create_aga_api',  # FastAPI 应用工厂
-    'AGAService',      # AGA 服务单例
-    'AGAClient',       # HTTP 客户端（来自 aga.api）
-    'AGA_VERSION',
-    'HAS_AGA_CORE',
-    
-    # 工厂
+    # 工厂（废弃）
     'BridgeFactory',
     'BridgeType',
     'BridgeConfig',
-    'create_bridge',  # 推荐入口
+    'create_bridge',
     
-    # ========== 传统方案（保留） ==========
-    # 基础组件
-    'PermissionValidator',
-    'InternalizationEngine',
+    # 传统组件（废弃）
     'ProductionBridge',
-    
-    # Decision Head 增强
-    'EnhancedInternalizationEngine',
-    'EnhancedDecisionHead',
-    'InternalizationConfig',
-    'EWCRegularizer',
-    
-    # Knowledge Adapter（深层内化）
-    'KnowledgeAdapter',
-    'KnowledgeAdapterLayer',
-    'KnowledgeAdapterManager',
-    'KnowledgeSlot',
-    'create_knowledge_encoder',
-    
-    # 深度内化服务
-    'DeepInternalizationService',
-    'InternalizationResult',
+    'InternalizationEngine',
 ]
 
+# 模块元数据
+__version__ = "4.0.0"
+__status__ = "deprecated"
+__successor__ = "app.services.knowledge_transfer_service"
