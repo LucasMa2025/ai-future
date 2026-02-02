@@ -54,6 +54,8 @@ class StateMachineService:
     # 状态转换规则表
     TRANSITION_TABLE: Dict[tuple, tuple] = {
         # (当前状态, 事件) -> (目标状态, 需要的决策)
+        
+        # ==================== 原有转换规则 ====================
         (NLGSMState.FROZEN, EventType.AUDIT_SIGNAL): (NLGSMState.LEARNING, Decision.ALLOW),
         (NLGSMState.FROZEN, EventType.PERIODIC): (NLGSMState.LEARNING, Decision.ALLOW),
         
@@ -79,6 +81,31 @@ class StateMachineService:
         (NLGSMState.RECOVERY_PLAN, EventType.PLAN_APPROVED): (NLGSMState.ROLLBACK, Decision.ALLOW),
         (NLGSMState.RECOVERY_PLAN, EventType.PLAN_RESTORE): (NLGSMState.FROZEN, Decision.ALLOW),
         (NLGSMState.RECOVERY_PLAN, EventType.PLAN_REJECTED): (NLGSMState.DIAGNOSIS, Decision.ALLOW),
+        
+        # ==================== 学习控制转换规则 (v4.0) ====================
+        # 暂停学习: LEARNING -> PAUSED
+        (NLGSMState.LEARNING, EventType.PAUSE_LEARNING): (NLGSMState.PAUSED, Decision.ALLOW),
+        
+        # 恢复学习: PAUSED -> LEARNING
+        (NLGSMState.PAUSED, EventType.RESUME_LEARNING): (NLGSMState.LEARNING, Decision.ALLOW),
+        
+        # 停止学习: LEARNING/PAUSED -> FROZEN
+        (NLGSMState.LEARNING, EventType.STOP_LEARNING): (NLGSMState.FROZEN, Decision.ALLOW),
+        (NLGSMState.PAUSED, EventType.STOP_LEARNING): (NLGSMState.FROZEN, Decision.ALLOW),
+        
+        # 调整方向: LEARNING -> VALIDATION (触发重新验证)
+        (NLGSMState.LEARNING, EventType.REDIRECT_LEARNING): (NLGSMState.VALIDATION, Decision.ALLOW),
+        (NLGSMState.PAUSED, EventType.REDIRECT_LEARNING): (NLGSMState.VALIDATION, Decision.ALLOW),
+        
+        # 检查点请求: 不改变状态，但触发检查点创建
+        # (通过 _execute_transition 中的特殊处理)
+        
+        # 回滚到检查点: LEARNING/PAUSED -> LEARNING (带检查点恢复)
+        (NLGSMState.LEARNING, EventType.ROLLBACK_TO_CHECKPOINT): (NLGSMState.LEARNING, Decision.ALLOW),
+        (NLGSMState.PAUSED, EventType.ROLLBACK_TO_CHECKPOINT): (NLGSMState.PAUSED, Decision.ALLOW),
+        
+        # PAUSED 态下的异常处理
+        (NLGSMState.PAUSED, EventType.ANOMALY): (NLGSMState.ROLLBACK, Decision.ROLLBACK),
     }
     
     # 任意状态都可以触发的异常事件
@@ -341,15 +368,26 @@ class StateMachineService:
         # 根据转换类型执行不同动作
         if to_state == NLGSMState.LEARNING:
             actions.append("unfreeze_parameters")
+            # 从暂停恢复时的特殊处理
+            if from_state == NLGSMState.PAUSED:
+                actions.append("resume_learning_session")
         
         elif to_state == NLGSMState.VALIDATION:
             actions.append("freeze_parameters")
             actions.append("start_validation")
+            # 方向调整触发的验证
+            if event.event_type == EventType.REDIRECT_LEARNING:
+                actions.append("apply_new_direction")
+                actions.append("create_redirect_checkpoint")
         
         elif to_state == NLGSMState.FROZEN:
             actions.append("freeze_parameters")
             if from_state == NLGSMState.VALIDATION:
                 actions.append("create_snapshot")
+            # 停止学习触发的冻结
+            if event.event_type == EventType.STOP_LEARNING:
+                actions.append("terminate_learning_session")
+                actions.append("create_termination_snapshot")
         
         elif to_state == NLGSMState.RELEASE:
             actions.append("prepare_release")
@@ -368,6 +406,24 @@ class StateMachineService:
         
         elif to_state == NLGSMState.RECOVERY_PLAN:
             actions.append("generate_recovery_plan")
+        
+        # ==================== 学习控制状态动作 (v4.0) ====================
+        elif to_state == NLGSMState.PAUSED:
+            actions.append("freeze_parameters")
+            actions.append("pause_learning_session")
+            actions.append("create_pause_checkpoint")
+            actions.append("send_pause_notification")
+        
+        # 检查点回滚的特殊处理
+        if event.event_type == EventType.ROLLBACK_TO_CHECKPOINT:
+            checkpoint_id = event.metadata.get("checkpoint_id")
+            if checkpoint_id:
+                actions.append(f"rollback_to_checkpoint:{checkpoint_id}")
+                actions.append("create_rollback_audit_log")
+        
+        # 检查点请求的特殊处理（不改变状态）
+        if event.event_type == EventType.CHECKPOINT_REQUEST:
+            actions.append("create_manual_checkpoint")
         
         return actions
     

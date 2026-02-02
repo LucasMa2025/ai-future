@@ -5,7 +5,14 @@ NLGSM 治理系统数据库模型
 """
 from .base import Base, TimestampMixin
 from .user import User, Role, UserRole
-from .permission import Permission, RolePermission, SystemFunction
+from .permission import (
+    Permission, 
+    RolePermission, 
+    SystemFunction,
+    UserPermission,
+    DataBackup,
+    SystemConfig,
+)
 from .state import SystemState, StateTransition
 from .audit import BusinessAuditLog, OperationLog
 from .notification import Notification, UserNotificationSetting
@@ -31,7 +38,12 @@ __all__ = [
     "UserRole",
     "Permission",
     "RolePermission",
+    "UserPermission",
     "SystemFunction",
+    
+    # 系统配置和备份
+    "SystemConfig",
+    "DataBackup",
     
     # 状态机
     "SystemState",

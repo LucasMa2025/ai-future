@@ -1,7 +1,7 @@
 """
 权限与系统功能模型
 """
-from sqlalchemy import Column, String, Boolean, ForeignKey, Integer, Text
+from sqlalchemy import Column, String, Boolean, ForeignKey, Integer, Text, DateTime
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import JSONB
 
@@ -115,5 +115,122 @@ class RolePermission(Base):
     
     __table_args__ = (
         {"comment": "角色权限关联表"},
+    )
+
+
+class UserPermission(Base, TimestampMixin):
+    """
+    用户权限关联表
+    
+    支持直接给用户分配权限（独立于角色）
+    """
+    __tablename__ = "user_permissions"
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(
+        String(36),  # UUID as string for flexibility
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+    permission_id = Column(
+        Integer,
+        ForeignKey("permissions.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+    
+    # 授权方式
+    grant_type = Column(String(20), default="allow", comment="授权类型: allow=允许, deny=拒绝")
+    
+    # 授权人
+    granted_by = Column(String(36), comment="授权人ID")
+    
+    # 扩展约束
+    constraints = Column(JSONB, default={}, comment="额外约束条件")
+    
+    # 过期时间（可选）
+    expires_at = Column(DateTime(timezone=True), comment="过期时间")
+    
+    __table_args__ = (
+        {"comment": "用户权限关联表"},
+    )
+
+
+class DataBackup(Base, TimestampMixin):
+    """
+    数据备份记录表
+    """
+    __tablename__ = "data_backups"
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    
+    # 备份信息
+    backup_name = Column(String(200), nullable=False, comment="备份名称")
+    backup_type = Column(String(50), nullable=False, comment="备份类型: full=完整备份, incremental=增量备份, tables=指定表")
+    
+    # 备份范围
+    tables = Column(JSONB, default=[], comment="备份的表列表")
+    
+    # 文件信息
+    file_path = Column(String(500), comment="备份文件路径")
+    file_size = Column(Integer, default=0, comment="文件大小(字节)")
+    compressed = Column(Boolean, default=True, comment="是否压缩")
+    
+    # 状态
+    status = Column(String(20), default="pending", comment="状态: pending/running/completed/failed")
+    progress = Column(Integer, default=0, comment="进度(0-100)")
+    
+    # 执行信息
+    started_at = Column(DateTime(timezone=True), comment="开始时间")
+    completed_at = Column(DateTime(timezone=True), comment="完成时间")
+    duration_seconds = Column(Integer, comment="耗时(秒)")
+    
+    # 操作人
+    created_by = Column(String(36), comment="创建人ID")
+    
+    # 结果
+    error_message = Column(Text, comment="错误信息")
+    record_counts = Column(JSONB, default={}, comment="各表记录数")
+    
+    # 备注
+    description = Column(Text, comment="备份说明")
+    
+    __table_args__ = (
+        {"comment": "数据备份记录表"},
+    )
+
+
+class SystemConfig(Base, TimestampMixin):
+    """
+    系统配置表
+    """
+    __tablename__ = "system_configs"
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    
+    # 配置项
+    config_key = Column(String(100), unique=True, nullable=False, index=True, comment="配置键")
+    config_value = Column(Text, comment="配置值")
+    value_type = Column(String(20), default="string", comment="值类型: string/number/boolean/json")
+    
+    # 分组
+    config_group = Column(String(50), index=True, comment="配置分组")
+    
+    # 元信息
+    display_name = Column(String(100), comment="显示名称")
+    description = Column(Text, comment="描述")
+    
+    # 约束
+    is_readonly = Column(Boolean, default=False, comment="是否只读")
+    is_secret = Column(Boolean, default=False, comment="是否敏感信息")
+    default_value = Column(Text, comment="默认值")
+    validation_rules = Column(JSONB, default={}, comment="验证规则")
+    
+    # 修改人
+    updated_by = Column(String(36), comment="修改人ID")
+    
+    __table_args__ = (
+        {"comment": "系统配置表"},
     )
 

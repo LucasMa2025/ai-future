@@ -63,6 +63,22 @@ class Settings(BaseSettings):
     # ==================== CORS ====================
     ALLOWED_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:5173"]
     
+    # ==================== AGA Portal ====================
+    # AGA Portal 为独立部署的知识管理服务，通过 HTTP API 通信
+    # 治理系统和 AGA Portal 可能部署在不同服务器
+    AGA_PORTAL_ENABLED: bool = True
+    AGA_PORTAL_URL: str = Field(default="http://localhost:8081")  # AGA Portal API 地址
+    AGA_PORTAL_TIMEOUT: float = 30.0  # HTTP 请求超时 (秒)
+    AGA_PORTAL_API_KEY: Optional[str] = None  # API 认证密钥 (可选)
+    AGA_PORTAL_NAMESPACE: str = "default"  # 默认命名空间
+    AGA_PORTAL_RETRY_ATTEMPTS: int = 3  # 失败重试次数
+    AGA_PORTAL_RETRY_DELAY: float = 1.0  # 重试间隔 (秒)
+    
+    # AGA 知识内化配置
+    AGA_INITIAL_LIFECYCLE: str = "probationary"  # 新知识初始状态
+    AGA_ENCODING_HIDDEN_DIM: int = 4096  # 向量维度 (需与 AGA Portal 配置一致)
+    AGA_ENCODING_BOTTLENECK_DIM: int = 64  # 瓶颈层维度
+    
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
