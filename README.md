@@ -38,24 +38,28 @@ Core Principle: "Innovation Under Control"
 ## 🌟 Key Features
 
 ### 1. Zero-Training Knowledge Injection
-- **AGA (Auxiliary Governed Attention)**: Hot-pluggable knowledge injection without gradient computation
-- **Runtime Dynamic**: Add/remove knowledge at runtime
-- **Instant Isolation**: Problematic knowledge can be immediately quarantined
+
+-   **AGA (Auxiliary Governed Attention)**: Hot-pluggable knowledge injection without gradient computation
+-   **Runtime Dynamic**: Add/remove knowledge at runtime
+-   **Instant Isolation**: Problematic knowledge can be immediately quarantined
 
 ### 2. Nested Learning Paradigm
-- **Multi-Frequency Optimization**: PARAMETER → MEMORY → OPTIMIZER → POLICY
-- **Continuum Memory System**: Isolated experimental memory for learning
-- **Context Flow**: Auditable learning process with full traceability
+
+-   **Multi-Frequency Optimization**: PARAMETER → MEMORY → OPTIMIZER → POLICY
+-   **Continuum Memory System**: Isolated experimental memory for learning
+-   **Context Flow**: Auditable learning process with full traceability
 
 ### 3. NLGSM Governance Framework
-- **8-State FSM**: LEARNING → VALIDATION → FROZEN → RELEASE → ROLLBACK → SAFE_HALT → DIAGNOSIS → RECOVERY
-- **Event-Decision-Action Pipeline**: Structured governance workflow
-- **Human-Centric**: Humans define rules, audit results, and approve production deployment
+
+-   **8-State FSM**: LEARNING → VALIDATION → FROZEN → RELEASE → ROLLBACK → SAFE_HALT → DIAGNOSIS → RECOVERY
+-   **Event-Decision-Action Pipeline**: Structured governance workflow
+-   **Human-Centric**: Humans define rules, audit results, and approve production deployment
 
 ### 4. Production-Ready Backend
-- **Multi-dimensional Anomaly Detection**: Metric, Behavior, Drift, External detectors
-- **Transactional Rollback**: Atomic operations with snapshot recovery
-- **Comprehensive Observability**: Prometheus metrics, health checks, alerting
+
+-   **Multi-dimensional Anomaly Detection**: Metric, Behavior, Drift, External detectors
+-   **Transactional Rollback**: Atomic operations with snapshot recovery
+-   **Comprehensive Observability**: Prometheus metrics, health checks, alerting
 
 ## 📐 Architecture
 
@@ -120,8 +124,12 @@ Core Principle: "Innovation Under Control"
 
 ## 📁 Project Structure
 
+> **Note**: AGA (Auxiliary Governed Attention) has been separated into an independent project. See [AGA Repository](../AGA/README.md) for details.
+
+> **Note**: The `bridge/` module has been **deprecated**. Knowledge transfer is now handled by `backend/app/services/knowledge_transfer_service.py` + AGA API Portal.
+
 ```
-AGI_Phase2/
+AIFuture/
 ├── self_learning/              # 🧠 Self-Learning System
 │   ├── nl_core/               # Nested Learning Core
 │   │   ├── kernel.py          # NL Kernel (LLM-based)
@@ -130,44 +138,78 @@ AGI_Phase2/
 │   │   └── optimizer.py       # Multi-level optimizer
 │   ├── explorer.py            # Autonomous exploration engine
 │   ├── knowledge_generator.py # Knowledge generation
+│   ├── knowledge_reader.py    # Production knowledge reader
 │   ├── chainable_learning_builder.py  # Chain learning support
+│   ├── nl_learning_unit_builder.py    # NL-based LU builder
+│   ├── learning_unit_builder.py       # Base LU builder
+│   ├── learning_unit_state.py         # LU state management
 │   ├── concurrent_learner.py  # Multi-threaded learning
 │   ├── async_learning_model.py # Non-blocking async model
+│   ├── checkpoint.py          # Learning checkpoint
 │   └── governance_interface.py # Governance integration
 │
-├── aga/                        # 🔌 AGA Module
-│   ├── core.py                # AGA core implementation
-│   ├── persistence.py         # SQLite persistence
-│   └── api.py                 # REST API
+├── bridge/                     # ⚠️ DEPRECATED - Use knowledge_transfer_service
+│   └── (legacy code, retained for reference)
 │
-├── bridge/                     # 🌉 Production Bridge
-│   ├── production_bridge.py   # Knowledge transfer gateway
-│   ├── internalization.py     # Knowledge internalization
-│   ├── aga_bridge.py          # AGA integration
-│   └── knowledge_adapter.py   # Format adaptation
-│
-├── backend/                    # 🏢 NLGSM Backend
+├── backend/                    # 🏢 NLGSM Backend (Governance System)
 │   └── app/
+│       ├── api/               # REST API endpoints
 │       ├── core/
 │       │   ├── anomaly/       # Multi-dimensional anomaly detection
 │       │   ├── eda/           # Event-Decision-Action pipeline
 │       │   └── observability/ # Metrics, health, alerting
 │       ├── services/
-│       │   ├── state_machine_service.py  # FSM implementation
-│       │   ├── governance_service.py     # Governance operations
-│       │   ├── approval_service.py       # Multi-sig approvals
-│       │   ├── artifact_service.py       # Governed artifacts
-│       │   └── diagnosis_service.py      # Diagnosis & recovery
-│       └── models/            # Database models
+│       │   ├── knowledge_transfer_service.py  # ★ AGA Portal integration
+│       │   ├── state_machine_service.py       # FSM implementation
+│       │   ├── governance_service.py          # Governance operations
+│       │   ├── learning_unit_service.py       # LU management
+│       │   ├── learning_control_service.py    # Learning control
+│       │   ├── approval_service.py            # Multi-sig approvals
+│       │   ├── artifact_service.py            # Governed artifacts
+│       │   ├── diagnosis_service.py           # Diagnosis & recovery
+│       │   ├── anomaly_detection_service.py   # Anomaly detection
+│       │   ├── observability_service.py       # Observability
+│       │   └── ...                            # Auth, User, Notification, etc.
+│       ├── models/            # Database models
+│       ├── schemas/           # Pydantic schemas
+│       ├── middleware/        # Auth, logging middleware
+│       └── db/                # Database setup
 │
 ├── llm/                        # 🤖 LLM Adapters
-│   └── adapters/              # DeepSeek, Ollama, vLLM, OpenAI
+│   ├── adapters/              # DeepSeek, Ollama, vLLM, OpenAI
+│   ├── client.py              # Unified LLM client
+│   ├── prompts.py             # Prompt templates
+│   └── risk_evaluator.py      # Risk evaluation
+│
+├── web/                        # 🌐 Frontend (Vue.js)
+│   └── src/                   # Vue components & pages
 │
 └── examples/                   # 📚 Demo Scripts
     ├── chainable_learning_demo.py
     ├── concurrent_learning_demo.py
     ├── async_learning_demo.py
-    └── governance_intervention_demo.py
+    ├── governance_intervention_demo.py
+    └── llm_adapter_demo.py
+```
+
+### Architecture Change: Knowledge Transfer
+
+The knowledge transfer flow has been redesigned:
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│  OLD (Deprecated)                                                        │
+│  self_learning → bridge/ → AGA (embedded)                               │
+├─────────────────────────────────────────────────────────────────────────┤
+│  NEW (Current)                                                           │
+│  self_learning → knowledge_transfer_service.py → AGA Portal (HTTP API)  │
+│                                                                          │
+│  Key Changes:                                                            │
+│  - AGA is now a standalone project with its own API Portal              │
+│  - Governance system only passes semantic text (condition/decision)     │
+│  - KV encoding is handled by AGA Portal internally                      │
+│  - Supports multi-tenant, distributed deployment                        │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
 ## 🚀 Quick Start
@@ -284,21 +326,21 @@ manager.attach_to_model(model, layer_indices=[-2, -1])
 
 Key metrics exposed via Prometheus:
 
-| Metric | Description |
-|--------|-------------|
-| `nlgsm_state_transitions_total` | State transition count |
-| `nlgsm_anomaly_events_total` | Anomaly detection count |
-| `learning_units_submitted_total` | LU submission count |
-| `aga_hit_rate` | AGA knowledge hit rate |
-| `aga_latency_ms` | AGA forward latency |
+| Metric                           | Description             |
+| -------------------------------- | ----------------------- |
+| `nlgsm_state_transitions_total`  | State transition count  |
+| `nlgsm_anomaly_events_total`     | Anomaly detection count |
+| `learning_units_submitted_total` | LU submission count     |
+| `aga_hit_rate`                   | AGA knowledge hit rate  |
+| `aga_latency_ms`                 | AGA forward latency     |
 
 ## 🛣️ Roadmap
 
-- [x] **Phase 1**: Core NL Framework + NLGSM Backend
-- [x] **Phase 2**: Chainable Learning + Concurrent Execution
-- [x] **Phase 2.1**: Async Learning Model + P0/P1/P2 Features
-- [ ] **Phase 3**: AGA Production Runtime
-- [ ] **Phase 4**: Multi-model Support + Distributed Learning
+-   [x] **Phase 1**: Core NL Framework + NLGSM Backend
+-   [x] **Phase 2**: Chainable Learning + Concurrent Execution
+-   [x] **Phase 2.1**: Async Learning Model + P0/P1/P2 Features
+-   [ ] **Phase 3**: AGA Production Runtime
+-   [ ] **Phase 4**: Multi-model Support + Distributed Learning
 
 ---
 
@@ -327,24 +369,28 @@ Key metrics exposed via Prometheus:
 ## 🌟 核心特性
 
 ### 1. 零训练知识注入
-- **AGA（辅助治理注意力）**：热插拔式知识注入，无需梯度计算
-- **运行时动态**：运行时添加/移除知识
-- **即时隔离**：问题知识可立即隔离
+
+-   **AGA（辅助治理注意力）**：热插拔式知识注入，无需梯度计算
+-   **运行时动态**：运行时添加/移除知识
+-   **即时隔离**：问题知识可立即隔离
 
 ### 2. 嵌套学习范式
-- **多频率优化**：PARAMETER → MEMORY → OPTIMIZER → POLICY
-- **连续记忆系统**：隔离的实验记忆用于学习
-- **上下文流**：可审计的学习过程，完整追溯
+
+-   **多频率优化**：PARAMETER → MEMORY → OPTIMIZER → POLICY
+-   **连续记忆系统**：隔离的实验记忆用于学习
+-   **上下文流**：可审计的学习过程，完整追溯
 
 ### 3. NLGSM 治理框架
-- **8 状态 FSM**：学习 → 验证 → 冻结 → 发布 → 回滚 → 安全停机 → 诊断 → 恢复
-- **事件-决策-动作管道**：结构化治理工作流
-- **人类中心**：人类定义规则、审计结果、批准生产部署
+
+-   **8 状态 FSM**：学习 → 验证 → 冻结 → 发布 → 回滚 → 安全停机 → 诊断 → 恢复
+-   **事件-决策-动作管道**：结构化治理工作流
+-   **人类中心**：人类定义规则、审计结果、批准生产部署
 
 ### 4. 生产就绪后端
-- **多维异常检测**：指标、行为、漂移、外部检测器
-- **事务性回滚**：原子操作与快照恢复
-- **全面可观测性**：Prometheus 指标、健康检查、告警
+
+-   **多维异常检测**：指标、行为、漂移、外部检测器
+-   **事务性回滚**：原子操作与快照恢复
+-   **全面可观测性**：Prometheus 指标、健康检查、告警
 
 ## 📐 架构图
 
@@ -409,8 +455,12 @@ Key metrics exposed via Prometheus:
 
 ## 📁 项目结构
 
+> **说明**：AGA（辅助治理注意力）已分离为独立项目。详见 [AGA 仓库](../AGA/README.md)。
+
+> **说明**：`bridge/` 模块已**弃用**。知识转移现由 `backend/app/services/knowledge_transfer_service.py` + AGA API Portal 处理。
+
 ```
-AGI_Phase2/
+AIFuture/
 ├── self_learning/              # 🧠 自学习系统
 │   ├── nl_core/               # 嵌套学习核心
 │   │   ├── kernel.py          # NL 内核（基于 LLM）
@@ -419,44 +469,78 @@ AGI_Phase2/
 │   │   └── optimizer.py       # 多层优化器
 │   ├── explorer.py            # 自主探索引擎
 │   ├── knowledge_generator.py # 知识生成器
+│   ├── knowledge_reader.py    # 生产知识读取器
 │   ├── chainable_learning_builder.py  # 链式学习支持
+│   ├── nl_learning_unit_builder.py    # 基于 NL 的 LU 构建器
+│   ├── learning_unit_builder.py       # 基础 LU 构建器
+│   ├── learning_unit_state.py         # LU 状态管理
 │   ├── concurrent_learner.py  # 多线程学习
 │   ├── async_learning_model.py # 非阻塞异步模型
+│   ├── checkpoint.py          # 学习检查点
 │   └── governance_interface.py # 治理集成
 │
-├── aga/                        # 🔌 AGA 模块
-│   ├── core.py                # AGA 核心实现
-│   ├── persistence.py         # SQLite 持久化
-│   └── api.py                 # REST API
+├── bridge/                     # ⚠️ 已弃用 - 请使用 knowledge_transfer_service
+│   └── (保留旧代码供参考)
 │
-├── bridge/                     # 🌉 生产桥接
-│   ├── production_bridge.py   # 知识传输网关
-│   ├── internalization.py     # 知识内化
-│   ├── aga_bridge.py          # AGA 集成
-│   └── knowledge_adapter.py   # 格式适配
-│
-├── backend/                    # 🏢 NLGSM 后端
+├── backend/                    # 🏢 NLGSM 后端（治理系统）
 │   └── app/
+│       ├── api/               # REST API 端点
 │       ├── core/
 │       │   ├── anomaly/       # 多维异常检测
 │       │   ├── eda/           # 事件-决策-动作管道
 │       │   └── observability/ # 指标、健康、告警
 │       ├── services/
-│       │   ├── state_machine_service.py  # FSM 实现
-│       │   ├── governance_service.py     # 治理操作
-│       │   ├── approval_service.py       # 多签审批
-│       │   ├── artifact_service.py       # 受治理工件
-│       │   └── diagnosis_service.py      # 诊断与恢复
-│       └── models/            # 数据库模型
+│       │   ├── knowledge_transfer_service.py  # ★ AGA Portal 集成
+│       │   ├── state_machine_service.py       # FSM 实现
+│       │   ├── governance_service.py          # 治理操作
+│       │   ├── learning_unit_service.py       # LU 管理
+│       │   ├── learning_control_service.py    # 学习控制
+│       │   ├── approval_service.py            # 多签审批
+│       │   ├── artifact_service.py            # 受治理工件
+│       │   ├── diagnosis_service.py           # 诊断与恢复
+│       │   ├── anomaly_detection_service.py   # 异常检测
+│       │   ├── observability_service.py       # 可观测性
+│       │   └── ...                            # 认证、用户、通知等
+│       ├── models/            # 数据库模型
+│       ├── schemas/           # Pydantic 模式
+│       ├── middleware/        # 认证、日志中间件
+│       └── db/                # 数据库配置
 │
 ├── llm/                        # 🤖 LLM 适配器
-│   └── adapters/              # DeepSeek, Ollama, vLLM, OpenAI
+│   ├── adapters/              # DeepSeek, Ollama, vLLM, OpenAI
+│   ├── client.py              # 统一 LLM 客户端
+│   ├── prompts.py             # 提示词模板
+│   └── risk_evaluator.py      # 风险评估
+│
+├── web/                        # 🌐 前端（Vue.js）
+│   └── src/                   # Vue 组件和页面
 │
 └── examples/                   # 📚 示例脚本
     ├── chainable_learning_demo.py
     ├── concurrent_learning_demo.py
     ├── async_learning_demo.py
-    └── governance_intervention_demo.py
+    ├── governance_intervention_demo.py
+    └── llm_adapter_demo.py
+```
+
+### 架构变更：知识转移
+
+知识转移流程已重新设计：
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│  旧架构（已弃用）                                                        │
+│  self_learning → bridge/ → AGA（内嵌）                                  │
+├─────────────────────────────────────────────────────────────────────────┤
+│  新架构（当前）                                                          │
+│  self_learning → knowledge_transfer_service.py → AGA Portal（HTTP API）│
+│                                                                          │
+│  主要变更：                                                              │
+│  - AGA 现为独立项目，拥有自己的 API Portal                              │
+│  - 治理系统只传递语义文本（condition/decision）                         │
+│  - KV 编码由 AGA Portal 内部处理                                        │
+│  - 支持多租户、分布式部署                                               │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
 ## 🚀 快速开始
@@ -573,21 +657,21 @@ manager.attach_to_model(model, layer_indices=[-2, -1])
 
 通过 Prometheus 暴露的关键指标：
 
-| 指标 | 描述 |
-|------|------|
-| `nlgsm_state_transitions_total` | 状态迁移计数 |
-| `nlgsm_anomaly_events_total` | 异常检测计数 |
-| `learning_units_submitted_total` | LU 提交计数 |
-| `aga_hit_rate` | AGA 知识命中率 |
-| `aga_latency_ms` | AGA 前向延迟 |
+| 指标                             | 描述           |
+| -------------------------------- | -------------- |
+| `nlgsm_state_transitions_total`  | 状态迁移计数   |
+| `nlgsm_anomaly_events_total`     | 异常检测计数   |
+| `learning_units_submitted_total` | LU 提交计数    |
+| `aga_hit_rate`                   | AGA 知识命中率 |
+| `aga_latency_ms`                 | AGA 前向延迟   |
 
 ## 🛣️ 路线图
 
-- [x] **阶段 1**：核心 NL 框架 + NLGSM 后端
-- [x] **阶段 2**：链式学习 + 并发执行
-- [x] **阶段 2.1**：异步学习模型 + P0/P1/P2 特性
-- [ ] **阶段 3**：AGA 生产运行时
-- [ ] **阶段 4**：多模型支持 + 分布式学习
+-   [x] **阶段 1**：核心 NL 框架 + NLGSM 后端
+-   [x] **阶段 2**：链式学习 + 并发执行
+-   [x] **阶段 2.1**：异步学习模型 + P0/P1/P2 特性
+-   [ ] **阶段 3**：AGA 生产运行时
+-   [ ] **阶段 4**：多模型支持 + 分布式学习
 
 ---
 
@@ -602,4 +686,3 @@ Contributions are welcome! Please read our contributing guidelines first.
 ## 📧 Contact
 
 For questions and support, please open an issue on GitHub.
-
