@@ -124,7 +124,7 @@ Core Principle: "Innovation Under Control"
 
 ## 📁 Project Structure
 
-> **Note**: AGA (Auxiliary Governed Attention) has been separated into an independent project. See [AGA Repository](../AGA/README.md) for details.
+> **Note**: AGA (Auxiliary Governed Attention) has been separated into an independent project. See [AGA Repository](https://github.com/LucasMa2025/auxiliary-governed-attention?tab=readme-ov-file#english) for details.
 
 > **Note**: The `bridge/` module has been **deprecated**. Knowledge transfer is now handled by `backend/app/services/knowledge_transfer_service.py` + AGA API Portal.
 
@@ -455,7 +455,7 @@ Key metrics exposed via Prometheus:
 
 ## 📁 项目结构
 
-> **说明**：AGA（辅助治理注意力）已分离为独立项目。详见 [AGA 仓库](../AGA/README.md)。
+> **说明**：AGA（辅助治理注意力）已分离为独立项目。详见 [AGA 仓库](https://github.com/LucasMa2025/auxiliary-governed-attention?tab=readme-ov-file#%E4%B8%AD%E6%96%87)。
 
 > **说明**：`bridge/` 模块已**弃用**。知识转移现由 `backend/app/services/knowledge_transfer_service.py` + AGA API Portal 处理。
 
@@ -686,3 +686,4 @@ Contributions are welcome! Please read our contributing guidelines first.
 ## 📧 Contact
 
 For questions and support, please open an issue on GitHub.
+
